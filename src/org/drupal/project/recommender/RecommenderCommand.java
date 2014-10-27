@@ -18,13 +18,11 @@ abstract public class RecommenderCommand extends DCommand {
     // settings loaded from prepare().
     protected Properties dbProperties;
     protected Properties dataStructure;
+    protected Properties extraOptions;
 
     // data initialized from execute().
     protected long numUsers;
     protected long numItems;
-
-    protected DataSource dataSource;
-    protected DataModel dataModel;
 
     @Override
     public void prepare(Bindings params) throws IllegalArgumentException {
@@ -72,6 +70,9 @@ abstract public class RecommenderCommand extends DCommand {
                 }
             }
         }
+
+        // handle extra options
+        extraOptions = params.containsKey("options") ? DUtils.getInstance().bindingsToProperties((Bindings) params.get("options")) : new Properties();
     }
 
 }
