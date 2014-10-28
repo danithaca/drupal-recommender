@@ -40,7 +40,7 @@ abstract public class RecommenderCommand extends DCommand {
         }
 
         // test dbProperties and further process.
-        if (!dbProperties.containsKey("driver") || !dbProperties.containsKey("database") || !dbProperties.containsKey("username") || !dbProperties.containsKey("password") || !dbProperties.containsKey("host")) {
+        if (!dbProperties.containsKey("driver") || !dbProperties.containsKey("username") || !dbProperties.containsKey("password")) {
             throw new IllegalArgumentException("Illegal database properties.");
         }
         if (!dbProperties.containsKey("driverClassName")) {

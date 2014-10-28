@@ -11,6 +11,7 @@
     <properties>
         <mahout.version>0.9</mahout.version>
         <dbcp.version>1.4</dbcp.version>
+        <dbutils.version>1.6</dbutils.version>
         <mysql.version>5.1.6</mysql.version>
     </properties>
 
@@ -32,6 +33,12 @@
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
             <version>${dbcp.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-dbutils</groupId>
+            <artifactId>commons-dbutils</artifactId>
+            <version>${dbutils.version}</version>
         </dependency>
 
         <dependency>

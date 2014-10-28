@@ -1,5 +1,6 @@
 package org.drupal.project.recommender.algorithm;
 
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbcp.BasicDataSourceFactory;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
@@ -21,13 +22,14 @@ import org.drupal.project.recommender.RecommenderCommand;
 import org.drupal.project.recommender.utils.RecommendationTuple;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class CollaborativeFiltering extends RecommenderCommand {
 
-    protected DataSource dataSource;
+    protected BasicDataSource dataSource;
     protected DataModel dataModel;
     protected ItemSimilarity itemSimilarity;
     protected UserSimilarity userSimilarity;
@@ -42,9 +44,8 @@ public class CollaborativeFiltering extends RecommenderCommand {
         try {
             // attention: we already used DBCP for pooling so no need for wrapping into ConnectionPooling again.
             //ConnectionPoolDataSource wrapperDataSource = new ConnectionPoolDataSource(database.getDataSource());
-            this.dataSource = BasicDataSourceFactory.createDataSource(dbProperties);
+            dataSource = (BasicDataSource) BasicDataSourceFactory.createDataSource(dbProperties);
         } catch (Exception e) {
-            logger.severe("Cannot initialized database connection.");
             throw new DCommandExecutionException(e);
         }
 
@@ -56,7 +57,6 @@ public class CollaborativeFiltering extends RecommenderCommand {
             numUsers = dataModel.getNumUsers();
             numItems = dataModel.getNumItems();
         } catch (TasteException e) {
-            logger.severe("Cannot get number of users or items. " + e.getMessage());
             throw new DCommandExecutionException(e);
         }
 
@@ -78,6 +78,13 @@ public class CollaborativeFiltering extends RecommenderCommand {
         this.result.put("num_similarity", numSimilarity);
         this.result.put("num_prediction", numPrediction);
         this.message.append("Successfully run Recommender from: ").append(DConfig.loadDefault().getAgentName());
+
+        // close database
+        try {
+            dataSource.close();
+        } catch (SQLException e) {
+            throw new DCommandExecutionException(e);
+        }
     }
 
 
