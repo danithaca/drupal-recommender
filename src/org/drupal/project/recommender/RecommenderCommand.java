@@ -72,7 +72,11 @@ abstract public class RecommenderCommand extends DCommand {
         }
 
         // handle extra options
-        extraOptions = params.containsKey("options") ? DUtils.getInstance().bindingsToProperties((Bindings) params.get("options")) : new Properties();
+        try {
+            extraOptions = params.containsKey("options") ? DUtils.getInstance().bindingsToProperties((Bindings) params.get("options")) : new Properties();
+        } catch (ClassCastException e) {
+            extraOptions = new Properties();
+        }
     }
 
 }

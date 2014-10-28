@@ -1,8 +1,8 @@
 package org.drupal.project.recommender.algorithm;
 
-import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbcp.BasicDataSourceFactory;
 import org.apache.mahout.cf.taste.common.TasteException;
+import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.model.jdbc.MySQLJDBCDataModel;
 import org.apache.mahout.cf.taste.impl.model.jdbc.PostgreSQLJDBCDataModel;
 import org.apache.mahout.cf.taste.impl.model.jdbc.SQL92JDBCDataModel;
@@ -10,17 +10,19 @@ import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
 import org.apache.mahout.cf.taste.impl.similarity.*;
 import org.apache.mahout.cf.taste.model.DataModel;
+import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.Recommender;
+import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.apache.mahout.cf.taste.similarity.ItemSimilarity;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
-import org.drupal.project.computing.DCommand;
 import org.drupal.project.computing.DConfig;
-import org.drupal.project.computing.DUtils;
 import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.recommender.RecommenderCommand;
+import org.drupal.project.recommender.utils.RecommendationTuple;
 
-import javax.script.Bindings;
 import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class CollaborativeFiltering extends RecommenderCommand {
@@ -30,6 +32,9 @@ public class CollaborativeFiltering extends RecommenderCommand {
     protected ItemSimilarity itemSimilarity;
     protected UserSimilarity userSimilarity;
     protected Recommender recommender;
+
+    protected int numSimilarity;
+    protected int numPrediction;
 
     @Override
     public void execute() throws DCommandExecutionException {
@@ -70,10 +75,13 @@ public class CollaborativeFiltering extends RecommenderCommand {
         // handle result data
         this.result.put("num_user", numUsers);
         this.result.put("num_item", numItems);
+        this.result.put("num_similarity", numSimilarity);
+        this.result.put("num_prediction", numPrediction);
         this.message.append("Successfully run Recommender from: ").append(DConfig.loadDefault().getAgentName());
     }
 
-    protected void initDataModel() {
+
+    protected void initDataModel() throws DCommandExecutionException {
         if (dbProperties.containsKey("driver") && dbProperties.getProperty("driver").equals("mysql")) {
             dataModel = new MySQLJDBCDataModel(dataSource, dataStructure.getProperty("preference name"), dataStructure.getProperty("preference user field"), dataStructure.getProperty("preference item field"), dataStructure.getProperty("preference score field"), dataStructure.getProperty("preference timestamp field"));
         } else if (dbProperties.containsKey("driver") && dbProperties.getProperty("driver").equals("postgresql")) {
@@ -82,6 +90,7 @@ public class CollaborativeFiltering extends RecommenderCommand {
             dataModel = new SQL92JDBCDataModel(dataSource, dataStructure.getProperty("preference name"), dataStructure.getProperty("preference user field"), dataStructure.getProperty("preference item field"), dataStructure.getProperty("preference score field"), dataStructure.getProperty("preference timestamp field"));
         }
     }
+
 
     protected void initSimilarity() throws DCommandExecutionException {
         try {
@@ -136,7 +145,7 @@ public class CollaborativeFiltering extends RecommenderCommand {
     protected void initRecommender() throws DCommandExecutionException {
         int nearestN = Integer.parseInt(extraOptions.getProperty("k nearest neighbors", "20"));
         float minSimilarityScore = Float.parseFloat(extraOptions.getProperty("min similarity score", "0.1"));
-        NearestNUserNeighborhood neighbor = null;
+        NearestNUserNeighborhood neighbor;
         try {
             neighbor = new NearestNUserNeighborhood(nearestN, minSimilarityScore, userSimilarity, dataModel);
         } catch (TasteException e) {
@@ -146,12 +155,55 @@ public class CollaborativeFiltering extends RecommenderCommand {
         recommender = new GenericUserBasedRecommender(dataModel, neighbor, userSimilarity);
     }
 
-    protected void computeSimilarity() {
+    protected int getMaxKeep() {
+        return extraOptions.containsKey("max entities to keep") ? Integer.parseInt(extraOptions.getProperty("max entities to keep")) : 50;
+    }
+
+    protected void computeSimilarity() throws DCommandExecutionException {
+        List<RecommendationTuple> similarities = new ArrayList<>();
+
+        try {
+            LongPrimitiveIterator userIterator = dataModel.getUserIDs();
+
+            while (userIterator.hasNext()) {
+                long userID = userIterator.nextLong();
+                long[] similarUserIDs = ((UserBasedRecommender) recommender).mostSimilarUserIDs(userID, getMaxKeep());
+                for (long similarUserID : similarUserIDs) {
+                    similarities.add(new RecommendationTuple(userID, similarUserID, new Float(userSimilarity.userSimilarity(userID, similarUserID))));
+                }
+            }
+
+        } catch (TasteException e) {
+            throw new DCommandExecutionException(e);
+        }
+
+        // handle similarities data.
+        numSimilarity = similarities.size();
+        // TODO: persist
 
     }
 
-    protected void computePrediction() {
+    protected void computePrediction() throws DCommandExecutionException {
+        List<RecommendationTuple> predictions = new ArrayList<>();
 
+        try {
+            LongPrimitiveIterator userIterator = dataModel.getUserIDs();
+
+            while (userIterator.hasNext()) {
+                long userID = userIterator.nextLong();
+                List<RecommendedItem> recommendedItemList = recommender.recommend(userID, getMaxKeep());
+                for (RecommendedItem recommendItem : recommendedItemList) {
+                    predictions.add(new RecommendationTuple(userID, recommendItem.getItemID(), recommendItem.getValue()));
+                }
+            }
+
+        } catch (TasteException e) {
+            throw new DCommandExecutionException(e);
+        }
+
+        // handle similarities data.
+        numPrediction = predictions.size();
+        // TODO: persist
     }
 
 }
