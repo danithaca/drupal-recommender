@@ -2,6 +2,7 @@ package org.drupal.project.recommender.algorithm;
 
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbcp.BasicDataSourceFactory;
+import org.apache.commons.dbutils.QueryRunner;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.model.jdbc.MySQLJDBCDataModel;
@@ -19,15 +20,17 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 import org.drupal.project.computing.DConfig;
 import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.recommender.RecommenderCommand;
+import org.drupal.project.recommender.utils.AsyncQueueProcessor;
 import org.drupal.project.recommender.utils.RecommendationTuple;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
-public class CollaborativeFiltering extends RecommenderCommand {
+abstract public class CollaborativeFiltering extends RecommenderCommand {
 
     protected BasicDataSource dataSource;
     protected DataModel dataModel;
@@ -159,6 +162,7 @@ public class CollaborativeFiltering extends RecommenderCommand {
             logger.severe("Cannot create nearest neighbor. " + e.getMessage());
             throw new DCommandExecutionException(e);
         }
+        // note: mahout requires user neighborhood for user-user recommendations. this leads to different results from the grouplens paper.
         recommender = new GenericUserBasedRecommender(dataModel, neighbor, userSimilarity);
     }
 
@@ -167,50 +171,79 @@ public class CollaborativeFiltering extends RecommenderCommand {
     }
 
     protected void computeSimilarity() throws DCommandExecutionException {
-        List<RecommendationTuple> similarities = new ArrayList<>();
+        QueryRunner queryRunner = new QueryRunner(dataSource);
+        //List<RecommendationTuple> similarities = new ArrayList<>();
+        long timestamp = (new Date()).getTime() / 1000;
+        int count = 0;
+        AsyncQueueProcessor dataProcessor;
 
         try {
+            // we are using a quick and dirty approach of clean up everything before saving new stuff.
+            // with this approach, there's no need to use db transactions.
+            queryRunner.update("DELETE FROM " + dataStructure.getProperty("user similarity name"));
+            dataProcessor = new AsyncQueueProcessor(dataSource, String.format("INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)", dataStructure.getProperty("user similarity name"), dataStructure.getProperty("user similarity user1 field"), dataStructure.getProperty("user similarity user2 field"), dataStructure.getProperty("user similarity score field"), dataStructure.getProperty("user similarity timestamp field")));
+            dataProcessor.start();
+
             LongPrimitiveIterator userIterator = dataModel.getUserIDs();
 
             while (userIterator.hasNext()) {
                 long userID = userIterator.nextLong();
                 long[] similarUserIDs = ((UserBasedRecommender) recommender).mostSimilarUserIDs(userID, getMaxKeep());
                 for (long similarUserID : similarUserIDs) {
-                    similarities.add(new RecommendationTuple(userID, similarUserID, new Float(userSimilarity.userSimilarity(userID, similarUserID))));
+                    //similarities.add(new RecommendationTuple(userID, similarUserID, new Float(userSimilarity.userSimilarity(userID, similarUserID))));
+                    dataProcessor.put(userID, similarUserID, new Float(userSimilarity.userSimilarity(userID, similarUserID)), timestamp);
+                    count++;
                 }
             }
 
-        } catch (TasteException e) {
+            // mark it as done and wait till it's done.
+            dataProcessor.accomplish();
+            dataProcessor.join();
+
+        } catch (TasteException | SQLException | InterruptedException e) {
             throw new DCommandExecutionException(e);
         }
 
         // handle similarities data.
-        numSimilarity = similarities.size();
-        // TODO: persist
-
+        //numSimilarity = similarities.size();
+        numSimilarity = count;
     }
 
     protected void computePrediction() throws DCommandExecutionException {
-        List<RecommendationTuple> predictions = new ArrayList<>();
+        QueryRunner queryRunner = new QueryRunner(dataSource);
+        //List<RecommendationTuple> predictions = new ArrayList<>();
+        long timestamp = (new Date()).getTime() / 1000;
+        int count = 0;
+        AsyncQueueProcessor dataProcessor;
 
         try {
+            queryRunner.update("DELETE FROM " + dataStructure.getProperty("prediction name"));
+            dataProcessor = new AsyncQueueProcessor(dataSource, String.format("INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)", dataStructure.getProperty("prediction name"), dataStructure.getProperty("prediction user field"), dataStructure.getProperty("prediction item field"), dataStructure.getProperty("prediction score field"), dataStructure.getProperty("prediction timestamp field")));
+            dataProcessor.start();
+
             LongPrimitiveIterator userIterator = dataModel.getUserIDs();
 
             while (userIterator.hasNext()) {
                 long userID = userIterator.nextLong();
                 List<RecommendedItem> recommendedItemList = recommender.recommend(userID, getMaxKeep());
                 for (RecommendedItem recommendItem : recommendedItemList) {
-                    predictions.add(new RecommendationTuple(userID, recommendItem.getItemID(), recommendItem.getValue()));
+                    //predictions.add(new RecommendationTuple(userID, recommendItem.getItemID(), recommendItem.getValue()));
+                    dataProcessor.put(userID, recommendItem.getItemID(), recommendItem.getValue(), timestamp);
+                    count++;
                 }
             }
 
-        } catch (TasteException e) {
+            // mark it as done and wait till it's done.
+            dataProcessor.accomplish();
+            dataProcessor.join();
+
+        } catch (TasteException | SQLException | InterruptedException e) {
             throw new DCommandExecutionException(e);
         }
 
         // handle similarities data.
-        numPrediction = predictions.size();
-        // TODO: persist
+        //numPrediction = predictions.size();
+        numPrediction = count;
     }
 
 }
