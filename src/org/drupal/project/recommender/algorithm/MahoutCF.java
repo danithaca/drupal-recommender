@@ -30,7 +30,7 @@ import java.util.Date;
 import java.util.List;
 
 
-abstract public class CollaborativeFiltering extends RecommenderCommand {
+abstract public class MahoutCF extends RecommenderCommand {
 
     protected BasicDataSource dataSource;
     protected DataModel dataModel;
