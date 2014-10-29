@@ -5,6 +5,7 @@ import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
+import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.drupal.project.computing.exception.DCommandExecutionException;
@@ -16,17 +17,21 @@ import java.util.List;
 
 public class User2User extends MahoutCF {
 
-    @Override
-    protected void initRecommender() throws DCommandExecutionException {
+    protected UserNeighborhood getNeighborhood() throws DCommandExecutionException {
         int nearestN = Integer.parseInt(extraOptions.getProperty("k nearest neighbors", "20"));
         float minSimilarityScore = Float.parseFloat(extraOptions.getProperty("min similarity score", "0.1"));
         NearestNUserNeighborhood neighbor;
         try {
             neighbor = new NearestNUserNeighborhood(nearestN, minSimilarityScore, userSimilarity, dataModel);
         } catch (TasteException e) {
-            logger.severe("Cannot create nearest neighbor. " + e.getMessage());
             throw new DCommandExecutionException(e);
         }
+        return neighbor;
+    }
+
+    @Override
+    protected void initRecommender() throws DCommandExecutionException {
+        UserNeighborhood neighbor = getNeighborhood();
         // note: mahout requires user neighborhood for user-user recommendations. this leads to different results from the grouplens paper.
         recommender = new GenericUserBasedRecommender(dataModel, neighbor, userSimilarity);
     }

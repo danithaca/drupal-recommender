@@ -141,16 +141,24 @@ abstract public class MahoutCF extends RecommenderCommand {
 
             // set default if no overrides.
             if (itemSimilarity == null) {
-                itemSimilarity = new PearsonCorrelationSimilarity(dataModel);
+                itemSimilarity = getDefaultItemSimilarity();
             }
             if (userSimilarity == null) {
-                userSimilarity = new PearsonCorrelationSimilarity(dataModel);
+                userSimilarity = getDefaultUserSimilarity();
             }
 
         } catch (TasteException e) {
             logger.severe("Cannot create similarity object." + e.getMessage());
             throw new DCommandExecutionException(e);
         }
+    }
+
+    protected ItemSimilarity getDefaultItemSimilarity() throws TasteException {
+        return new PearsonCorrelationSimilarity(dataModel);
+    }
+
+    protected UserSimilarity getDefaultUserSimilarity() throws TasteException {
+        return new PearsonCorrelationSimilarity(dataModel);
     }
 
 
