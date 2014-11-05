@@ -17,7 +17,6 @@ public class DefaultApplication extends DApplication {
         defaultCommandMapping.put("user2user_boolean", "org.drupal.project.recommender.algorithm.User2UserBoolean");
         defaultCommandMapping.put("item2item", "org.drupal.project.recommender.algorithm.Item2Item");
         defaultCommandMapping.put("item2item_boolean", "org.drupal.project.recommender.algorithm.Item2ItemBoolean");
-        defaultCommandMapping.put("echo", "org.drupal.project.computing.common.EchoCommand");
         return defaultCommandMapping;
     }
 
