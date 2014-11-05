@@ -1,6 +1,7 @@
 package org.drupal.project.recommender.utils;
 
 import org.apache.commons.dbutils.QueryRunner;
+
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

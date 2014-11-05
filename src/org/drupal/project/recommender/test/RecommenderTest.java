@@ -1,15 +1,11 @@
 package org.drupal.project.recommender.test;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.dbcp.BasicDataSourceFactory;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.builder.RecursiveToStringStyle;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.drupal.project.computing.DApplication;
 import org.drupal.project.computing.DConfig;
-import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.recommender.DefaultApplication;
 import org.drupal.project.recommender.utils.AsyncQueueProcessor;
 import org.junit.Test;

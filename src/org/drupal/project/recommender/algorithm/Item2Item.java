@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 
-public class Item2Item extends MahoutCF {
+public class Item2Item extends MahoutClassicCF {
 
     @Override
     protected void initRecommender() throws DCommandExecutionException {

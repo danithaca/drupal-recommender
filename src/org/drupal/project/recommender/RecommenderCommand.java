@@ -1,18 +1,19 @@
 package org.drupal.project.recommender;
 
-import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.commons.dbcp.BasicDataSourceFactory;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.mahout.cf.taste.model.DataModel;
 import org.drupal.project.computing.DCommand;
 import org.drupal.project.computing.DConfig;
 import org.drupal.project.computing.DUtils;
 import org.drupal.project.computing.exception.DNotFoundException;
 
 import javax.script.Bindings;
-import javax.sql.DataSource;
 import java.util.Properties;
 
+
+/**
+ * This is the basic Recommender command that interact with Drupal Computing DCommand class to be able to access data in Drupal.
+ * All other algorithms extends from this one.
+ */
 abstract public class RecommenderCommand extends DCommand {
 
     // settings loaded from prepare().

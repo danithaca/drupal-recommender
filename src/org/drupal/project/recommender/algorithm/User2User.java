@@ -6,16 +6,15 @@ import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
 import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
-import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.recommender.utils.AsyncQueueProcessor;
 
 import java.sql.SQLException;
 import java.util.Date;
-import java.util.List;
 
-public class User2User extends MahoutCF {
+
+public class User2User extends MahoutClassicCF {
 
     protected UserNeighborhood getNeighborhood() throws DCommandExecutionException {
         int nearestN = Integer.parseInt(extraOptions.getProperty("k nearest neighbors", "20"));

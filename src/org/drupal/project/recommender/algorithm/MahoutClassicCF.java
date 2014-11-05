@@ -8,31 +8,25 @@ import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.model.jdbc.MySQLJDBCDataModel;
 import org.apache.mahout.cf.taste.impl.model.jdbc.PostgreSQLJDBCDataModel;
 import org.apache.mahout.cf.taste.impl.model.jdbc.SQL92JDBCDataModel;
-import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
-import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
 import org.apache.mahout.cf.taste.impl.similarity.*;
 import org.apache.mahout.cf.taste.model.DataModel;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.Recommender;
-import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.apache.mahout.cf.taste.similarity.ItemSimilarity;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 import org.drupal.project.computing.DConfig;
 import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.recommender.RecommenderCommand;
 import org.drupal.project.recommender.utils.AsyncQueueProcessor;
-import org.drupal.project.recommender.utils.RecommendationTuple;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 /**
- * Mahout collaborative filtering approach.
+ * Classical collaborative filtering approach implemented in Mahout.
  */
-abstract public class MahoutCF extends RecommenderCommand {
+abstract public class MahoutClassicCF extends RecommenderCommand {
 
     protected BasicDataSource dataSource;
     protected DataModel dataModel;

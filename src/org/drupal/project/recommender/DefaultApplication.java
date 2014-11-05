@@ -4,6 +4,10 @@ import org.drupal.project.computing.DApplication;
 
 import java.util.Properties;
 
+
+/**
+ * This registers the Recommender Application to Drupal
+ */
 public class DefaultApplication extends DApplication {
 
     public DefaultApplication() {
