@@ -15,6 +15,7 @@ import org.apache.mahout.cf.taste.recommender.Recommender;
 import org.apache.mahout.cf.taste.similarity.ItemSimilarity;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 import org.drupal.project.computing.DConfig;
+import org.drupal.project.computing.DUtils;
 import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.recommender.RecommenderCommand;
 import org.drupal.project.recommender.utils.AsyncQueueProcessor;
@@ -175,6 +176,8 @@ abstract public class MahoutClassicCF extends RecommenderCommand {
         int count = 0;
         AsyncQueueProcessor dataProcessor;
 
+        boolean skipInvalidUID = DUtils.getInstance().getBoolean(extraOptions.getProperty("prediction skip invalid uid", "false"));
+
         try {
             queryRunner.update("DELETE FROM " + dataStructure.getProperty("prediction name"));
             dataProcessor = new AsyncQueueProcessor(dataSource, String.format("INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)", dataStructure.getProperty("prediction name"), dataStructure.getProperty("prediction user field"), dataStructure.getProperty("prediction item field"), dataStructure.getProperty("prediction score field"), dataStructure.getProperty("prediction timestamp field")));
@@ -184,6 +187,10 @@ abstract public class MahoutClassicCF extends RecommenderCommand {
 
             while (userIterator.hasNext()) {
                 long userID = userIterator.nextLong();
+
+                // skip invalid uid.
+                if (skipInvalidUID && userID <= 0) continue;
+
                 List<RecommendedItem> recommendedItemList = recommender.recommend(userID, getMaxKeep());
                 for (RecommendedItem recommendItem : recommendedItemList) {
                     //predictions.add(new RecommendationTuple(userID, recommendItem.getItemID(), recommendItem.getValue()));
