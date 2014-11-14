@@ -1,4 +1,4 @@
-drupal-recommender (7.x-6.0)
+drupal-recommender (7.x-6.X)
 ============================
 
 This is the Java agent code for Drupal RecommenderAPI module.
